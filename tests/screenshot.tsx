@@ -81,6 +81,26 @@ export async function capture(
     if (gameActionResponses?.[index]) {
       await page.waitForFunction(`window.MapHasRendered[${index}] === true`);
     }
+    // Sprites load through CSS when they first appear, so wait until every
+    // background image in the map is loaded before taking the screenshot.
+    await page.evaluate(async (selector) => {
+      const urls = new Set<string>();
+      for (const element of document.querySelectorAll(`${selector}, ${selector} *`)) {
+        for (const [, url] of getComputedStyle(element).backgroundImage.matchAll(
+          /url\("?([^")]+)"?\)/g,
+        )) {
+          urls.add(url);
+        }
+      }
+      await Promise.all(
+        [...urls].map((url) => {
+          const image = new Image();
+          image.src = url;
+          return image.decode().catch(() => {});
+        }),
+      );
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }, selector);
     const screenshot = await page.locator(selector).screenshot();
     if (!screenshot) {
       throw new Error(`Could not screenshot map ${index}.`);

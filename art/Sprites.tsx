@@ -37,11 +37,11 @@ const cacheImage = (path: string): [HTMLImageElement, Promise<void>] => {
   return [image, promise];
 };
 
-const getFallbackURL = (name: string) => {
-  const path = `${AssetDomain}/${AssetVersion}/${name}.png`;
-  cacheImage(path);
-  return path;
-};
+// Only builds the URL. Loading every variant here kept ~1,600 images (every
+// player color and biome) in memory for good, which got the page killed on
+// phones. Common variants and images drawn on canvas are preloaded below; the
+// rest load through CSS when they first appear.
+const getFallbackURL = (name: string) => `${AssetDomain}/${AssetVersion}/${name}.png`;
 
 const loadImage = (url: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
